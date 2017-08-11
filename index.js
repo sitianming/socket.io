@@ -10,6 +10,10 @@ app.get('/main.css', function(req, res){
   res.sendFile(__dirname+"/main.css");
 });
 
+app.get('/.well-known/pki-validation/fileauth.txt', function(req, res){
+  res.sendFile(__dirname+"/.well-known/pki-validation/fileauth.txt");
+});
+
 var online = {}; // 保存所有在线的用户昵称
 
 function isUsed(newNickname){

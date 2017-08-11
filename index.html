@@ -26,25 +26,34 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
+    var nickname;
     $(function () {
         var l = navigator.href;
         var socket = io(l);
 
-        var nickname = prompt("请输入您的昵称：");
+
+        if(localStorage.chatNickname){
+            nickname = localStorage.chatNickname;
+        }else{
+            nickname = prompt("请输入您的昵称：");
+        }
+
+
         // var nickname = "stm";
         socket.on("nickname check",function(msg){
             if(msg==="ok"){
                 // 该名字可用
+                localStorage.chatNickname = nickname;
             }else{
                 // 名字不可用
                 nickname = prompt("对不起，昵称已经被占用，输入新昵称：");
-                while(nickname===""){
+                while(!nickname){
                     nickname = prompt("昵称不能为空：");
                 }
                 socket.emit('nickname', nickname);
             }
         })
-        while(nickname===""){
+        while(!nickname){
             nickname = prompt("昵称不能为空：");
         }
         socket.emit('nickname', nickname);
