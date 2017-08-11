@@ -27,7 +27,8 @@
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
     $(function () {
-        var socket = io();
+        var l = navigator.href;
+        var socket = io(l);
 
         var nickname = prompt("请输入您的昵称：");
         // var nickname = "stm";
