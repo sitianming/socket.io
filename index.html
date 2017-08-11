@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="main.css">
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <div id="online-wrap">
+        <h3>当前在线：</h3>
+        <ul id="online">
+        </ul>
+    </div>
+    <form id="global-form" action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <div class="whisper-wrap">
+        <h3>stm</h3>
+        <ul id="whisper-messages">
+        </ul>
+        <form id="whisper-form" action="">
+          <input id="whisper" autocomplete="off" /><button>Send</button>
+        </form>
+        <button class="close-btn">x</button>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    $(function () {
+        var socket = io();
+
+        var nickname = prompt("请输入您的昵称：");
+        // var nickname = "stm";
+        socket.on("nickname check",function(msg){
+            if(msg==="ok"){
+                // 该名字可用
+            }else{
+                // 名字不可用
+                nickname = prompt("对不起，昵称已经被占用，输入新昵称：");
+                while(nickname===""){
+                    nickname = prompt("昵称不能为空：");
+                }
+                socket.emit('nickname', nickname);
+            }
+        })
+        while(nickname===""){
+            nickname = prompt("昵称不能为空：");
+        }
+        socket.emit('nickname', nickname);
+
+
+        $('#global-form').submit(function(){
+            var msg = {
+                nickname:nickname,
+                message:$('#m').val()
+            };
+            addMsg(msg);
+            socket.emit('chat message', msg);
+            $('#m').val('');
+            return false;
+        });
+
+        socket.on("chat message",function(msg){
+            console.log(msg);
+            addMsg(msg);
+        });
+
+        socket.on("user in",function(){
+            $("#messages").append($("<li>").text("--- someone in"));
+        });
+
+        socket.on("user out",function(){
+            $("#messages").append($("<li>").text("--- someone out"));
+        });
+
+        socket.on("online",function(online){
+            refreshOline(online,nickname);
+        });
+
+        // 密语相关
+        $('#whisper-form').submit(function(){
+            var msg = {
+                to:$(".whisper-wrap h3").text(),
+                from:nickname,
+                message:$('#whisper').val()
+            };
+            addWhisperMsg(msg,nickname);
+            socket.emit('whisper message', msg);
+            $('#whisper').val('');
+            return false;
+        });
+
+        socket.on("whisper message",function(msg){
+            addWhisperMsg(msg,nickname);
+        });
+
+        if(Notification){
+            // 支持桌面提醒
+            Notification.requestPermission();
+        }
+    });
+    $("#online").delegate("li","click",function(){
+        var to = this.innerHTML.trim();
+        if(to.indexOf("you") >=0){
+            return;
+        }
+        popWhisper(to);
+    });
+    $(".close-btn").click(function(){
+        $(".whisper-wrap").css("display","none");
+    })
+
+    function addMsg(msg){
+        $("#messages").append($("<li>").html('<span class="nickname">'+msg.nickname+"</span>: "+msg.message));
+        if(document.hidden){
+            desktopTip(msg);
+        }
+    }
+    function addWhisperMsg(msg,me){
+        if(me === msg.from){
+            $("#whisper-messages").append($("<li>").html(msg.message).addClass("me"));
+        }else{
+            $("#whisper-messages").append($("<li>").html('<span class="nickname">'+msg.from+"</span>: "+msg.message));
+        }
+        if(document.hidden){
+            //desktopTip(msg);
+        }
+    }
+    function desktopTip(tip){
+        if(Notification.permission==="granted"){
+            // 用户允许提示
+            var iconUrl = "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1502261505909&di=b6d18523f8153e202aa6faff871dafb2&imgtype=0&src=http%3A%2F%2Fa724.phobos.apple.com%2Fus%2Fr1000%2F080%2FPurple%2Fv4%2Fe4%2F1a%2F4e%2Fe41a4e65-f575-eabd-0c3e-2c12e0eacf11%2Fmzl.zlqhfvux.png";
+            var title = "新消息";
+            var body = tip.nickname+": "+tip.message;
+            desktopTips = new Notification(title,{icon:iconUrl,body:body});
+        }
+    }
+    function refreshOline(online,me){
+        var ul = "";
+        for(var id in online){
+            if(me ===online[id]){
+                ul += '<li class="high-light">'+online[id]+' (you)</li>';
+            }else{
+                ul += '<li>'+online[id]+'</li>';
+            }
+
+        }
+        document.querySelector("#online").innerHTML = ul;
+    }
+    function popWhisper(to){
+        $(".whisper-wrap h3").text(to);
+        $(".whisper-wrap").css("display","block");
+        $("#whisper").focus();
+    }
+    </script>
+  </body>
+</html>
